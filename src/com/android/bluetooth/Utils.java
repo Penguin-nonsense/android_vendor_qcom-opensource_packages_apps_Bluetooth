@@ -507,7 +507,8 @@ public final class Utils {
         if (context != null) {
             final int result = PermissionChecker.checkPermissionForDataDeliveryFromDataSource(
                 context, permission, PID_UNKNOWN,
-                new AttributionSource(context.getAttributionSource(), attributionSource), message);
+                new AttributionSource(context.getAttributionSource(),
+                                      Objects.requireNonNull(attributionSource)), message);
             if (result == PERMISSION_GRANTED) {
                 return true;
             }
@@ -772,7 +773,8 @@ public final class Utils {
 
         if (PermissionChecker.checkPermissionForDataDeliveryFromDataSource(
                 context, ACCESS_COARSE_LOCATION, PID_UNKNOWN,
-                new AttributionSource(context.getAttributionSource(), attributionSource),
+                new AttributionSource(context.getAttributionSource(),
+                                      Objects.requireNonNull(attributionSource)),
                 "Bluetooth location check") == PERMISSION_GRANTED) {
             return true;
         }
@@ -798,14 +800,16 @@ public final class Utils {
 
         if (PermissionChecker.checkPermissionForDataDeliveryFromDataSource(
                 context, ACCESS_FINE_LOCATION, PID_UNKNOWN,
-                new AttributionSource(context.getAttributionSource(), attributionSource),
+                new AttributionSource(context.getAttributionSource(),
+                                      Objects.requireNonNull(attributionSource)),
                 "Bluetooth location check") == PERMISSION_GRANTED) {
             return true;
         }
 
         if (PermissionChecker.checkPermissionForDataDeliveryFromDataSource(
                 context, ACCESS_COARSE_LOCATION, PID_UNKNOWN,
-                new AttributionSource(context.getAttributionSource(), attributionSource),
+                new AttributionSource(context.getAttributionSource(),
+                                      Objects.requireNonNull(attributionSource)),
                 "Bluetooth location check") == PERMISSION_GRANTED) {
             return true;
         }
@@ -830,7 +834,8 @@ public final class Utils {
 
         if (PermissionChecker.checkPermissionForDataDeliveryFromDataSource(
                 context, ACCESS_FINE_LOCATION, PID_UNKNOWN,
-                new AttributionSource(context.getAttributionSource(), attributionSource),
+                new AttributionSource(context.getAttributionSource(),
+                                      Objects.requireNonNull(attributionSource)),
                 "Bluetooth location check") == PERMISSION_GRANTED) {
             return true;
         }
