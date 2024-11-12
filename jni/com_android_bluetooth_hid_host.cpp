@@ -295,7 +295,7 @@ static jboolean disconnectHidNative(JNIEnv* env, jobject object,
     return JNI_FALSE;
   }
 
-  bt_status_t status = sBluetoothHidInterface->disconnect((RawAddress*)addr);
+  bt_status_t status = sBluetoothHidInterface->disconnect((RawAddress*)addr, false);
   if (status != BT_STATUS_SUCCESS) {
     ALOGE("Failed disconnect hid channel, status: %d", status);
     ret = JNI_FALSE;

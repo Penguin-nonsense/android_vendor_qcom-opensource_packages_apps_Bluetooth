@@ -59,6 +59,11 @@ static jbyteArray marshall_bda(const RawAddress* bd_addr) {
     ALOGE("Fail to new jbyteArray bd addr");
     return NULL;
   }
+  if(bd_addr == nullptr) {
+    ALOGE("bd addr is null");
+    return NULL;
+  }
+
   sCallbackEnv->SetByteArrayRegion(addr, 0, sizeof(RawAddress),
                                    (jbyte*)bd_addr);
   return addr;

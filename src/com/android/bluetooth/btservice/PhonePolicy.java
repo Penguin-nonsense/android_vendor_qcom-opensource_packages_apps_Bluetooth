@@ -943,7 +943,8 @@ class PhonePolicy {
                debugLog("autoConnect: attempting auto connection for recently"+
                         " connected A2DP Source device:" + mostRecentlyConnectedA2dpSrcDevice);
                autoConnectA2dpSink(mostRecentlyConnectedA2dpSrcDevice);
-               if (SystemProperties.get("ro.board.platform").equals("neo")) {
+               if (SystemProperties.get("ro.board.platform").equals("neo")
+                 ||SystemProperties.get("ro.board.platform").equals("neo61")) {
                    autoConnectMapClient(mostRecentlyConnectedA2dpSrcDevice);
                }
             }

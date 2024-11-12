@@ -46,6 +46,7 @@ import com.android.internal.util.ArrayUtils;
 import com.android.bluetooth.avrcpcontroller.AvrcpControllerService;
 import com.android.modules.utils.SynchronousResultReceiver;
 import com.android.bluetooth.hfpclient.HeadsetClientService;
+import com.android.bluetooth.hfpclient.HfpClientA2DPSync;
 import android.content.Context;
 import android.media.AudioManager;
 import android.os.Message;
@@ -58,6 +59,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * Provides Bluetooth A2DP Sink profile, as a service in the Bluetooth application.
@@ -78,9 +80,11 @@ public class A2dpSinkService extends ProfileService {
     private static A2dpSinkStreamHandler mA2dpSinkStreamHandler;
     private static A2dpSinkService sService;
     protected static BluetoothDevice mStreamingDevice;
+    protected static BluetoothDevice mPausedDevice = null;
     protected static BluetoothDevice mStreamPendingDevice = null;
     protected static BluetoothDevice mHandOffPendingDevice = null;
     private HeadsetClientService mHeadsetClientService;
+    private HfpClientA2DPSync mHfpClientA2DPSync;
 
     private static int mMaxA2dpSinkConnections = 1;
     private A2dpSinkVendorService mA2dpSinkVendor;
@@ -93,6 +97,7 @@ public class A2dpSinkService extends ProfileService {
     private List<BluetoothDevice> connectedDevices = null;
     private static final int DELAY_REMOVE_ACTIVE_DEV = 1000;
     private static final int HFP_DISABLING_TIMEOUT =100;
+    private final ReentrantReadWriteLock mStreamingDeviceLock = new ReentrantReadWriteLock();
 
     static {
         classInitNative();
@@ -413,28 +418,45 @@ public class A2dpSinkService extends ProfileService {
 
     public void NotifyHFcallsChanged() {
         Log.d(TAG ," NotifyHFcallsChanged ");
-        List <BluetoothHeadsetClientCall> callList =  new ArrayList<BluetoothHeadsetClientCall>();
         if(mHeadsetClientService == null)
             mHeadsetClientService = HeadsetClientService.getHeadsetClientService();
-        List <BluetoothDevice> connectedDevices = mHeadsetClientService.getConnectedDevices();
-        if(!(connectedDevices.isEmpty())) {
-            for (BluetoothDevice mDevice : connectedDevices) {
-                callList.addAll(mHeadsetClientService.getCurrentCalls(mDevice));
+        BluetoothDevice callingDevice = mHeadsetClientService.getCallingDevice();
+        List <BluetoothHeadsetClientCall> callList = mHeadsetClientService.getCallList();
+        try {
+            Log.d(TAG ," callingDevice" + callingDevice + "streamingDevice" + mStreamingDevice);
+            mStreamingDeviceLock.writeLock().lock();
+            if(mStreamingDevice != null && callingDevice != null
+                && !mStreamingDevice.equals(callingDevice)) {
+                Log.d(TAG ,"Incomming Call in progress send pause to :" + mStreamingDevice);
+                AvrcpControllerService avrcpService =
+                        AvrcpControllerService.getAvrcpControllerService();
+                if(!(callList.isEmpty()) && isA2dpPlaying(mStreamingDevice)) {
+                    avrcpService.sendPassThroughCommandNative(Utils.getByteAddress(mStreamingDevice),
+                                AvrcpControllerService.PASS_THRU_CMD_ID_PAUSE,
+                                AvrcpControllerService.KEY_STATE_PRESSED);
+                    avrcpService.sendPassThroughCommandNative(Utils.getByteAddress(mStreamingDevice),
+                                AvrcpControllerService.PASS_THRU_CMD_ID_PAUSE,
+                                AvrcpControllerService.KEY_STATE_RELEASED);
+                    mPausedDevice = mStreamingDevice;
+                }
+                mA2dpSinkStreamHandler.obtainMessage(A2dpSinkStreamHandler.STOP_SINK).sendToTarget();
+                mPausedDueToCallIndicators = true;
+                sAudioIsEnabled = false;
+            } else if(mPausedDevice != null &&
+                      mHeadsetClientService.isA2dpSinkPossible() == true) {
+                Log.d(TAG ,"Send Avrcp play after call : "+ mPausedDevice);
+                AvrcpControllerService avrcpService =
+                        AvrcpControllerService.getAvrcpControllerService();
+                avrcpService.sendPassThroughCommandNative(Utils.getByteAddress(mPausedDevice),
+                            AvrcpControllerService.PASS_THRU_CMD_ID_PLAY,
+                            AvrcpControllerService.KEY_STATE_PRESSED);
+                avrcpService.sendPassThroughCommandNative(Utils.getByteAddress(mPausedDevice),
+                            AvrcpControllerService.PASS_THRU_CMD_ID_PLAY,
+                            AvrcpControllerService.KEY_STATE_RELEASED);
+                mPausedDevice = null;
             }
-        }
-        if(!(callList.isEmpty())&& mStreamingDevice != null) {
-            Log.d(TAG ,"Incomming Call in progress send pause to :" + mStreamingDevice);
-            AvrcpControllerService avrcpService =
-                    AvrcpControllerService.getAvrcpControllerService();
-            avrcpService.sendPassThroughCommandNative(Utils.getByteAddress(mStreamingDevice),
-                        AvrcpControllerService.PASS_THRU_CMD_ID_PAUSE,
-                        AvrcpControllerService.KEY_STATE_PRESSED);
-            avrcpService.sendPassThroughCommandNative(Utils.getByteAddress(mStreamingDevice),
-                        AvrcpControllerService.PASS_THRU_CMD_ID_PAUSE,
-                        AvrcpControllerService.KEY_STATE_RELEASED);
-            mA2dpSinkStreamHandler.obtainMessage(A2dpSinkStreamHandler.STOP_SINK).sendToTarget();
-            mPausedDueToCallIndicators = true;
-            sAudioIsEnabled = false;
+        } finally {
+            mStreamingDeviceLock.writeLock().unlock();
         }
     }
 
@@ -788,7 +810,8 @@ public class A2dpSinkService extends ProfileService {
             } else if (device != null && !mIsSplitSink) {
                 mStreamingDevice = device;
             }
-            if (SystemProperties.get("ro.board.platform").equals("neo")) {
+            if (SystemProperties.get("ro.board.platform").equals("neo")
+               || SystemProperties.get("ro.board.platform").equals("neo61")) {
                 if (mAdapterService != null
                     && ArrayUtils.contains(mAdapterService.getRemoteUuids(device),
                                                    BluetoothUuid.MAS)) {
@@ -818,6 +841,9 @@ public class A2dpSinkService extends ProfileService {
                 }
             } else if(state == BluetoothProfile.STATE_DISCONNECTED) {
                 connectedDevices.remove(device);
+                if (mPausedDevice != null && device != null && mPausedDevice.equals(device)) {
+                    mPausedDevice = null;
+                }
                 if (mAudioManager != null && (connectedDevices.size() == 0)) {
                     if(sAudioIsEnabled == true) {
                         Log.d(TAG, "Update STOP_SINK to Audio HAL " + device);
@@ -890,9 +916,14 @@ public class A2dpSinkService extends ProfileService {
                 return;
             }
 
-            if(mIsSplitSink) {
-                sAudioIsEnabled = false;
-                mStreamingDevice = null;
+            try {
+                mStreamingDeviceLock.writeLock().lock();
+                if(mIsSplitSink) {
+                    sAudioIsEnabled = false;
+                    mStreamingDevice = null;
+                }
+            } finally {
+                mStreamingDeviceLock.writeLock().unlock();
             }
         }
     }
@@ -909,8 +940,10 @@ public class A2dpSinkService extends ProfileService {
     }
 
     public void onStartIndCallback(byte[] address) {
-        mHeadsetClientService = HeadsetClientService.getHeadsetClientService();
+        if(mHeadsetClientService == null)
+            mHeadsetClientService = HeadsetClientService.getHeadsetClientService();
         BluetoothDevice dev = getDevice(address);
+        BluetoothDevice callingDevice = mHeadsetClientService.getCallingDevice();
         if ( mHeadsetClientService!= null &&
                 mHeadsetClientService.IsHFPDisableInProgress(dev) == true) {
             Log.d(TAG, "HFP Disabling in Progress for device: "+dev);
@@ -920,12 +953,23 @@ public class A2dpSinkService extends ProfileService {
             mA2dpSinkStreamHandler.sendMessageDelayed(msg,HFP_DISABLING_TIMEOUT);
             return;
         }
-        if ( mHeadsetClientService!= null && mHeadsetClientService.isA2dpSinkPossible() == false) {
-            if(mA2dpSinkVendor!= null){
-                Log.d(TAG, "Reject A2dpSink");
-                mA2dpSinkVendor.StartIndRsp (address, false);
+        if(dev != null && !dev.equals(callingDevice)) {
+            if (mHeadsetClientService!= null && mHeadsetClientService.isA2dpSinkPossible() == false) {
+                if(mA2dpSinkVendor!= null){
+                    Log.d(TAG, "Reject A2dpSink");
+                    mA2dpSinkVendor.StartIndRsp (address, false);
+                }
+                return;
             }
-            return;
+        } else if(dev != null && dev.equals(callingDevice)) {
+            if (mHeadsetClientService!= null && mHeadsetClientService.isScoActive(callingDevice)) {
+                Log.d(TAG, "HFP SCO active, wait for 100 msec to SCO gets disconnected : "+dev);
+                Message msg = mA2dpSinkStreamHandler.obtainMessage(
+                                  A2dpSinkStreamHandler.DELAYED_START_IND);
+                msg.obj = dev;
+                mA2dpSinkStreamHandler.sendMessageDelayed(msg,HFP_DISABLING_TIMEOUT);
+                return;
+            }
         }
         BluetoothDevice device = getDevice(address);
         Log.d(TAG, "onStartIndCallback dev " + device + "streaming device" + mStreamingDevice);

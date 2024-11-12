@@ -48,6 +48,7 @@ import java.util.concurrent.Executor;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.*;
 
 /**
  * Provides Bluetooth Headset Client (HF Role) profile, as a service in the
@@ -1006,6 +1007,23 @@ public class HeadsetClientService extends ProfileService {
         return false;
     }
 
+    public boolean isScoActive(BluetoothDevice device) {
+        if(mHfpClientA2dpSinkSync != null)
+            return mHfpClientA2dpSinkSync.isScoActive(device);
+        return false;
+    }
+
+    public BluetoothDevice getCallingDevice() {
+        if(mHfpClientA2dpSinkSync != null)
+            return mHfpClientA2dpSinkSync.getCallingDevice();
+        return null;
+    }
+
+    public List <BluetoothHeadsetClientCall> getCallList() {
+        if(mHfpClientA2dpSinkSync != null)
+            return mHfpClientA2dpSinkSync.getCurrentCalls();
+        return Collections.emptyList();
+    }
     public boolean IsHFPDisableInProgress(BluetoothDevice device) {
         HeadsetClientStateMachine sm = getStateMachine(device);
         if (sm == null) {

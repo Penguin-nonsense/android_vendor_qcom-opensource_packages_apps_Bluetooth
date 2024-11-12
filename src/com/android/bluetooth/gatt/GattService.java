@@ -2063,6 +2063,10 @@ public class GattService extends ProfileService {
                 }
             } catch (RemoteException | PendingIntent.CanceledException e) {
                 Log.e(TAG, "Exception: " + e);
+
+                if (!client.appDied) {
+                  client.appDied = true;
+                }
                 mScannerMap.remove(client.scannerId);
                 mScanManager.stopScan(client.scannerId);
             }

@@ -179,12 +179,20 @@ public class A2dpSinkStreamHandler extends Handler {
                 break;
 
             case SRC_PLAY:
+                BluetoothDevice callingDevice = null;
+                BluetoothDevice streamingDevice = mA2dpSinkService.mStreamingDevice;
                 HeadsetClientService mHeadsetClientService
                        = HeadsetClientService.getHeadsetClientService();
-                if(mHeadsetClientService!= null
+                if(mHeadsetClientService != null) {
+                    callingDevice = mHeadsetClientService.getCallingDevice();
+                }
+
+                if (streamingDevice != null &&  !streamingDevice.equals(callingDevice)) {
+                    if(mHeadsetClientService!= null
                         && mHeadsetClientService.isA2dpSinkPossible() == false) {
-                    sendAvrcpPause();
-                    break;
+                        sendAvrcpPause();
+                        break;
+                    }
                 }
                 mStreamAvailable = true;
                 // Remote play command.
@@ -278,10 +286,6 @@ public class A2dpSinkStreamHandler extends Handler {
                         break;
 
                     case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
-                        // Temporary loss of focus, if we are actively streaming pause the remote
-                        // and make sure we resume playback when we regain focus.
-                        sendMessageDelayed(obtainMessage(DELAYED_PAUSE), SETTLE_TIMEOUT);
-                        setFluorideAudioTrackGain(0);
                         break;
 
                     case AudioManager.AUDIOFOCUS_LOSS:

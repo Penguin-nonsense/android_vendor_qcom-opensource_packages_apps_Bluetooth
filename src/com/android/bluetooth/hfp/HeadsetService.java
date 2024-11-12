@@ -1332,7 +1332,7 @@ public class HeadsetService extends ProfileService {
      *    -Maximum allowed connections N set by user is used to determine number
      * of Legacy connections
      */
-    private boolean isConnectionAllowed(BluetoothDevice device,
+    public boolean isConnectionAllowed(BluetoothDevice device,
                                            List<BluetoothDevice> connDevices
                                            ) {
         AdapterService adapterService = AdapterService.getAdapterService();

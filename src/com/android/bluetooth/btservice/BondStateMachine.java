@@ -351,7 +351,8 @@ final class BondStateMachine extends StateMachine {
                         return false;
                     }
                     sendDisplayPinIntent(devProp.getAddress(), passkey, variant);
-                    if(SystemProperties.get("ro.board.platform").equals("neo")) {
+                    if(SystemProperties.get("ro.board.platform").equals("neo")
+                      || SystemProperties.get("ro.board.platform").equals("neo61")) {
                         Log.d(TAG,"Auto Accept pairing request for Neo devices");
                         BluetoothDevice device = (BluetoothDevice)msg.obj;
                         device.setPairingConfirmation(true);

@@ -532,6 +532,13 @@ public class ScanManager {
                 client = mScanNative.getBatchScanClient(scannerId);
 
                 if(client == null) {
+                  if (appDied) {
+                    if (DBG) {
+                      Log.d(TAG, "app died, unregister scanner - " + scannerId);
+                    }
+                    mService.unregisterScanner(scannerId,
+                                                mService.getAttributionSource());
+                  }
                     if (DBG) Log.d(TAG,"batch client is null");
                     return;
                 }

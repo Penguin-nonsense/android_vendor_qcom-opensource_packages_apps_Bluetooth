@@ -188,6 +188,9 @@ public class HeadsetClientStateMachine extends StateMachine {
     private final NativeInterface mNativeInterface;
     private final VendorCommandResponseProcessor mVendorProcessor;
 
+    private IState mCurrentState;
+    private final Object mLock = new Object();
+
     // Accessor for the states, useful for reusing the state machines
     public IState getDisconnectedState() {
         return mDisconnected;
@@ -443,6 +446,14 @@ public class HeadsetClientStateMachine extends StateMachine {
                 new BluetoothHeadsetClientCall(mCurrentDevice, id, state, number, multiParty,
                         outgoing, mInBandRing));
     }
+
+    public IState getCurrentHeadsetClientStateMachineState() {
+        synchronized(mLock) {
+            Log.d(TAG, "returning mCurrentState as " + mCurrentState);
+            return mCurrentState;
+        }
+    }
+
 
     private void acceptCall(int flag) {
         int action = -1;
@@ -843,6 +854,9 @@ public class HeadsetClientStateMachine extends StateMachine {
         public void enter() {
             Log.d(TAG, "Enter Disconnected: " + getCurrentMessage().what);
 
+            synchronized(mLock) {
+                mCurrentState = this;
+            }
             // cleanup
             mIndicatorNetworkState = HeadsetClientHalConstants.NETWORK_STATE_NOT_AVAILABLE;
             mIndicatorNetworkType = HeadsetClientHalConstants.SERVICE_TYPE_HOME;
@@ -975,6 +989,9 @@ public class HeadsetClientStateMachine extends StateMachine {
         public void enter() {
             if (DBG) {
                 Log.d(TAG, "Enter Connecting: " + getCurrentMessage().what);
+            }
+            synchronized(mLock) {
+                mCurrentState = this;
             }
             // This message is either consumed in processMessage or
             // removed in exit. It is safe to send a CONNECTING_TIMEOUT here since
@@ -1141,6 +1158,9 @@ public class HeadsetClientStateMachine extends StateMachine {
         public void enter() {
             if (DBG) {
                 Log.d(TAG, "Enter Connected: " + getCurrentMessage().what);
+            }
+            synchronized(mLock) {
+                mCurrentState = this;
             }
             mAudioWbs = false;
             mCommandedSpeakerVolume = -1;
@@ -1462,6 +1482,7 @@ public class HeadsetClientStateMachine extends StateMachine {
                             switch (queuedAction.first) {
                                 case QUERY_CURRENT_CALLS:
                                     queryCallsDone();
+                                    mA2dpService.NotifyHFcallsChanged();
                                     break;
                                 case VOICE_RECOGNITION_START:
                                     if (event.valueInt == AT_OK) {
@@ -1649,6 +1670,9 @@ public class HeadsetClientStateMachine extends StateMachine {
             if (DBG) {
                 Log.d(TAG, "Enter AudioOn: " + getCurrentMessage().what);
             }
+            synchronized(mLock) {
+                mCurrentState = this;
+            }
             broadcastAudioState(mCurrentDevice, BluetoothHeadsetClient.STATE_AUDIO_CONNECTED,
                     BluetoothHeadsetClient.STATE_AUDIO_CONNECTING);
         }
@@ -1794,7 +1818,7 @@ public class HeadsetClientStateMachine extends StateMachine {
             return BluetoothProfile.STATE_DISCONNECTED;
         }
 
-        IState currentState = getCurrentState();
+        IState currentState = getCurrentHeadsetClientStateMachineState();
         if (currentState == mConnecting) {
             return BluetoothProfile.STATE_CONNECTING;
         }
@@ -1917,7 +1941,7 @@ public class HeadsetClientStateMachine extends StateMachine {
     }
 
     boolean isConnected() {
-        IState currentState = getCurrentState();
+        IState currentState = getCurrentHeadsetClientStateMachineState();
         return (currentState == mConnected || currentState == mAudioOn);
     }
 
@@ -1959,7 +1983,7 @@ public class HeadsetClientStateMachine extends StateMachine {
     }
 
     boolean isAudioOn() {
-        return (getCurrentState() == mAudioOn);
+        return (getCurrentHeadsetClientStateMachineState() == mAudioOn);
     }
 
     synchronized int getAudioState(BluetoothDevice device) {

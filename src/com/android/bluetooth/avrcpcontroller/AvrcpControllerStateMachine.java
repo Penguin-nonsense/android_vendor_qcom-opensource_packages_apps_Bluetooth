@@ -898,11 +898,11 @@ class AvrcpControllerStateMachine extends StateMachine {
         if (newIndex != currIndex) {
             mAudioManager.setStreamVolume(AudioManager.STREAM_MUSIC, newIndex,
                     AudioManager.FLAG_SHOW_UI);
-            if (mIsSplitSink) {
-                String volume_param  = "btsink_volume="+newIndex;
-                Log.d(TAG,"setAbsVolume : "+volume_param);
-                mAudioManager.setParameters(volume_param);
-            }
+        }
+        if (mIsSplitSink) {
+            String volume_param  = "btsink_volume="+newIndex;
+            Log.d(TAG,"setAbsVolume : "+volume_param);
+            mAudioManager.setParameters(volume_param);
         }
         AvrcpControllerService.sendAbsVolRspNative(mDeviceAddress, absVol, label);
     }

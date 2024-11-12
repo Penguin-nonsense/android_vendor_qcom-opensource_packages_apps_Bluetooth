@@ -1370,6 +1370,7 @@ public class AdapterService extends Service {
      */
     private boolean isSupported(ParcelUuid[] localDeviceUuids, ParcelUuid[] remoteDeviceUuids,
             int profile, BluetoothDevice device) {
+        Log.d(TAG, "isSupported: profile: " + profile + ", device: " + device);
         ParcelUuid ADV_AUDIO_T_MEDIA =
             ParcelUuid.fromString("00006AD0-0000-1000-8000-00805F9B34FB");
 
@@ -1399,27 +1400,34 @@ public class AdapterService extends Service {
         }
 
         if (profile == BluetoothProfile.HEADSET) {
-            return ((ArrayUtils.contains(localDeviceUuids, BluetoothUuid.HSP_AG)
-                    && ArrayUtils.contains(remoteDeviceUuids, BluetoothUuid.HSP))
-                    || (ArrayUtils.contains(localDeviceUuids, BluetoothUuid.HFP_AG)
-                    && ArrayUtils.contains(remoteDeviceUuids, BluetoothUuid.HFP))
-                    || ArrayUtils.contains(remoteDeviceUuids, ADV_AUDIO_HEARINGAID)
-                    || ArrayUtils.contains(remoteDeviceUuids, ADV_AUDIO_T_VOICE)
-                    || ArrayUtils.contains(remoteDeviceUuids, ADV_AUDIO_P_VOICE));
+            boolean isCallSupportedProfile = ((ArrayUtils.contains(localDeviceUuids, BluetoothUuid.HSP_AG)
+                                            && ArrayUtils.contains(remoteDeviceUuids, BluetoothUuid.HSP))
+                                            || (ArrayUtils.contains(localDeviceUuids, BluetoothUuid.HFP_AG)
+                                            && ArrayUtils.contains(remoteDeviceUuids, BluetoothUuid.HFP))
+                                            || ArrayUtils.contains(remoteDeviceUuids, ADV_AUDIO_HEARINGAID)
+                                            || ArrayUtils.contains(remoteDeviceUuids, ADV_AUDIO_T_VOICE)
+                                            || ArrayUtils.contains(remoteDeviceUuids, ADV_AUDIO_P_VOICE));
+            Log.d(TAG, "isSupported: profile: " + profile +
+                       ", isCallSupportedProfile: " + isCallSupportedProfile);
+            return isCallSupportedProfile;
         }
         if (profile == BluetoothProfile.HEADSET_CLIENT) {
           return (ArrayUtils.contains(remoteDeviceUuids, BluetoothUuid.HFP_AG)
                 && ArrayUtils.contains(localDeviceUuids, BluetoothUuid.HFP));
         }
         if (profile == BluetoothProfile.A2DP) {
-            return ArrayUtils.contains(remoteDeviceUuids, BluetoothUuid.ADV_AUDIO_DIST)
-                    || ArrayUtils.contains(remoteDeviceUuids, BluetoothUuid.A2DP_SINK)
-                    || ArrayUtils.contains(remoteDeviceUuids, ADV_AUDIO_T_MEDIA)
-                    || ArrayUtils.contains(remoteDeviceUuids, ADV_AUDIO_HEARINGAID)
-                    || ArrayUtils.contains(remoteDeviceUuids, ADV_AUDIO_G_MEDIA)
-                    || ArrayUtils.contains(remoteDeviceUuids, ADV_AUDIO_W_MEDIA)
-                    || ArrayUtils.contains(remoteDeviceUuids, ADV_AUDIO_P_MEDIA)
-                    || ArrayUtils.contains(remoteDeviceUuids, ADV_AUDIO_G_VBC);
+            boolean isMediaSupportedProfile =
+                                    ArrayUtils.contains(remoteDeviceUuids, BluetoothUuid.ADV_AUDIO_DIST)
+                                    || ArrayUtils.contains(remoteDeviceUuids, BluetoothUuid.A2DP_SINK)
+                                    || ArrayUtils.contains(remoteDeviceUuids, ADV_AUDIO_T_MEDIA)
+                                    || ArrayUtils.contains(remoteDeviceUuids, ADV_AUDIO_HEARINGAID)
+                                    || ArrayUtils.contains(remoteDeviceUuids, ADV_AUDIO_G_MEDIA)
+                                    || ArrayUtils.contains(remoteDeviceUuids, ADV_AUDIO_W_MEDIA)
+                                    || ArrayUtils.contains(remoteDeviceUuids, ADV_AUDIO_P_MEDIA)
+                                    || ArrayUtils.contains(remoteDeviceUuids, ADV_AUDIO_G_VBC);
+            Log.d(TAG, "isSupported: profile: " + profile +
+                       ", isMediaSupportedProfile: " + isMediaSupportedProfile);
+            return isMediaSupportedProfile;
         }
         if (profile == BluetoothProfile.A2DP_SINK) {
             return ArrayUtils.contains(remoteDeviceUuids, BluetoothUuid.ADV_AUDIO_DIST)
@@ -1453,7 +1461,11 @@ public class AdapterService extends Service {
                     && ArrayUtils.contains(remoteDeviceUuids, BluetoothUuid.PBAP_PSE);
         }
         if (profile == BluetoothProfile.HEARING_AID) {
-            return ArrayUtils.contains(remoteDeviceUuids, BluetoothUuid.HEARING_AID);
+            boolean isHASupportedProfile = ArrayUtils.contains(remoteDeviceUuids,
+                                                            BluetoothUuid.HEARING_AID);
+            Log.d(TAG, "isSupported: profile: " + profile +
+                       ", isHASupportedProfile: " + isHASupportedProfile);
+            return isHASupportedProfile;
         }
         if (profile == BluetoothProfile.SAP) {
             return ArrayUtils.contains(remoteDeviceUuids, BluetoothUuid.SAP);
@@ -1466,8 +1478,18 @@ public class AdapterService extends Service {
             return Utils.arrayContains(remoteDeviceUuids, BluetoothUuid.COORDINATED_SET);
         }
         if (profile == BluetoothProfile.LE_AUDIO) {
-            Log.e(TAG, "isSupported: profile: " + profile);
-            return ArrayUtils.contains(remoteDeviceUuids, BluetoothUuid.LE_AUDIO);
+            boolean isLEASupportedProfile = ArrayUtils.contains(remoteDeviceUuids,
+                                                            BluetoothUuid.LE_AUDIO);
+            Log.d(TAG, "isSupported: profile: " + profile +
+                       ", isLEASupportedProfile: " + isLEASupportedProfile);
+            return isLEASupportedProfile;
+        }
+        if (profile == BluetoothProfile.HAP_CLIENT) {
+            boolean isHAPSupportedProfile = ArrayUtils.contains(remoteDeviceUuids,
+                                                            BluetoothUuid.HAS);
+            Log.d(TAG, "isSupported: profile: " + profile +
+                       ", isHAPSupportedProfile: " + isHAPSupportedProfile);
+            return isHAPSupportedProfile;
         }
         if (profile == BluetoothProfile.LE_AUDIO_BROADCAST_ASSISTANT) {
             return ArrayUtils.contains(remoteDeviceUuids, BluetoothUuid.BASS);
@@ -1591,11 +1613,28 @@ public class AdapterService extends Service {
         boolean voiceConnect = false;
 
         boolean isQtiLeAudioEnabled = ApmConstIntf.getQtiLeAudioEnabled();
-        Log.d(TAG, "isQtiLeAudioEnabled: " + isQtiLeAudioEnabled);
+        Log.d(TAG, "connectEnabledProfiles: isQtiLeAudioEnabled: " + isQtiLeAudioEnabled +
+                   ", remoteDeviceUuids: " + remoteDeviceUuids +
+                   ", localDeviceUuids: " + localDeviceUuids);
+        if (remoteDeviceUuids != null) {
+            Log.d(TAG, "connectEnabledProfiles: remoteDeviceUuids:");
+            for (ParcelUuid parcelUuid : remoteDeviceUuids) {
+                Log.d(TAG, "UUID: " + parcelUuid.getUuid().toString());
+            }
+        }
+        if (localDeviceUuids != null) {
+            Log.d(TAG, "connectEnabledProfiles: localDeviceUuids:");
+            for (ParcelUuid parcelUuid : localDeviceUuids) {
+                Log.d(TAG, "UUID: " + parcelUuid.getUuid().toString());
+            }
+        }
+
         if(isQtiLeAudioEnabled) {
+            Log.d(TAG, "isQtiLeAudioEnabled is true");
             if(mMediaAudio != null && isSupported(localDeviceUuids, remoteDeviceUuids,
                 BluetoothProfile.A2DP, device) && mMediaAudio.getConnectionPolicy(device)
                 > BluetoothProfile.CONNECTION_POLICY_FORBIDDEN) {
+                    Log.d(TAG, "connectEnabledProfiles:  media audio connect is set to true");
                     mediaConnect = true;
             }
 
@@ -1626,6 +1665,7 @@ public class AdapterService extends Service {
             if(mMediaAudio != null && isSupported(localDeviceUuids, remoteDeviceUuids,
                 BluetoothProfile.A2DP, device) && mMediaAudio.getConnectionPolicy(device)
                 > BluetoothProfile.CONNECTION_POLICY_FORBIDDEN) {
+                Log.d(TAG, "connectEnabledProfiles:  media audio connect ");
                 mMediaAudio.connect(device, voiceConnect);
             }
         } else if (mA2dpService != null && isSupported(localDeviceUuids, remoteDeviceUuids,
@@ -1919,15 +1959,19 @@ public class AdapterService extends Service {
 
     public int isLeAudioSupported() {
         if (BluetoothProperties.isProfileBapUnicastClientEnabled().orElse(false)) {
+            Log.d(TAG, "isLeAudioSupported: supported");
             return BluetoothStatusCodes.FEATURE_SUPPORTED;
         }
+        Log.d(TAG, "isLeAudioSupported: not supported");
         return BluetoothStatusCodes.FEATURE_NOT_SUPPORTED;
     }
 
     public int isHapClientSupported() {
         if (BluetoothProperties.isProfileHapClientEnabled().orElse(false)) {
+            Log.d(TAG, "isProfileHapClientEnabled: supported");
             return BluetoothStatusCodes.FEATURE_SUPPORTED;
         }
+        Log.d(TAG, "isProfileHapClientEnabled: not supported");
         return BluetoothStatusCodes.FEATURE_NOT_SUPPORTED;
     }
 
@@ -1944,8 +1988,10 @@ public class AdapterService extends Service {
         if (BluetoothProperties.isProfileBapBroadcastSourceEnabled().orElse(false)
                 && mAdapterProperties.isLePeriodicAdvertisingSupported()
                 && mAdapterProperties.isLeExtendedAdvertisingSupported()) {
+            Log.d(TAG, "isLeAudioBroadcastSourceSupported: supported");
             return BluetoothStatusCodes.FEATURE_SUPPORTED;
         }
+        Log.d(TAG, "isLeAudioBroadcastSourceSupported: not supported");
         return BluetoothStatusCodes.FEATURE_NOT_SUPPORTED;
     }
 
@@ -1953,8 +1999,10 @@ public class AdapterService extends Service {
         if (BluetoothProperties.isProfileBapBroadcastAssistEnabled().orElse(false)
                 && mAdapterProperties.isLePeriodicAdvertisingSupported()
                 && mAdapterProperties.isLeExtendedAdvertisingSupported()) {
+            Log.d(TAG, "isLeAudioBroadcastAssistantSupported: supported");
             return BluetoothStatusCodes.FEATURE_SUPPORTED;
         }
+        Log.d(TAG, "isLeAudioBroadcastAssistantSupported: not supported");
         return BluetoothStatusCodes.FEATURE_NOT_SUPPORTED;
     }
 
@@ -5590,6 +5638,7 @@ public class AdapterService extends Service {
             android.Manifest.permission.MODIFY_PHONE_STATE,
     })
     public boolean connectAllEnabledProfiles(BluetoothDevice device) {
+        Log.d(TAG, "connectAllEnabledProfiles");
         if (!profileServicesRunning()) {
             Log.e(TAG, "connectAllEnabledProfiles: Not all profile services running");
             return false;
@@ -5598,6 +5647,7 @@ public class AdapterService extends Service {
 
         // Checks if any profiles are enabled and if so, only connect enabled profiles
         if (isAnyProfileEnabled(device)) {
+            Log.d(TAG, "isAnyProfileEnabled");
             return connectEnabledProfiles(device);
         }
 

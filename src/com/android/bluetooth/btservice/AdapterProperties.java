@@ -1519,7 +1519,8 @@ class AdapterProperties {
             mProfilesConnected = 0;
             mProfilesConnecting = 0;
             mProfilesDisconnecting = 0;
-            if (SystemProperties.get("ro.board.platform").equals("neo")) {
+            if (SystemProperties.get("ro.board.platform").equals("neo")
+              || SystemProperties.get("ro.board.platform").equals("neo61")) {
                 Log.d(TAG ,"Enable always Discoverable and Connectable for Neo devices");
                 setScanMode(AbstractionLayer.BT_SCAN_MODE_CONNECTABLE_DISCOVERABLE);
             } else {

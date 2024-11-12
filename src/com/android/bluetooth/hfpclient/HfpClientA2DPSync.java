@@ -18,7 +18,7 @@ import java.util.*;
 
 public class HfpClientA2DPSync{
     private final HeadsetClientService hsClientService;
-
+    private static final String TAG = "HfpClientA2DPSync";
     public boolean isA2dpStreamAllowed(){
         List <BluetoothHeadsetClientCall> currentCalls = getCurrentCalls();
         if((currentCalls.isEmpty()) == false)
@@ -36,12 +36,20 @@ public class HfpClientA2DPSync{
         }
         return true;
     }
+    public boolean isScoActive(BluetoothDevice device) {
+        int audioState = hsClientService.getAudioState(device);
+        if(audioState == BluetoothHeadsetClient.STATE_AUDIO_CONNECTED
+            || audioState == BluetoothHeadsetClient.STATE_AUDIO_CONNECTING) {
+            return true;
+        }
+        return false;
+    }
 
     public HfpClientA2DPSync(HeadsetClientService context) {
         hsClientService = context;
     }
 
-    private List <BluetoothHeadsetClientCall> getCurrentCalls() {
+    public List <BluetoothHeadsetClientCall> getCurrentCalls() {
         List <BluetoothHeadsetClientCall> callList =  new ArrayList<BluetoothHeadsetClientCall>();;
         List <BluetoothDevice> connectedDevices = hsClientService.getConnectedDevices();
         if(!(connectedDevices.isEmpty())) {
@@ -51,5 +59,18 @@ public class HfpClientA2DPSync{
             return callList;
         }
         return  Collections.emptyList();
+    }
+
+    public BluetoothDevice getCallingDevice() {
+        BluetoothDevice callingDevice = null;
+        List <BluetoothDevice> connectedDevices = hsClientService.getConnectedDevices();
+        if(!(connectedDevices.isEmpty())) {
+            for (BluetoothDevice mDevice : connectedDevices) {
+                if(!hsClientService.getCurrentCalls(mDevice).isEmpty()) {
+                    callingDevice = mDevice;
+                }
+            }
+        }
+        return callingDevice;
     }
 }
