@@ -910,7 +910,7 @@ class AvrcpControllerStateMachine extends StateMachine {
     private int getVolumePercentage() {
         int maxVolume = mAudioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
         int currIndex = mAudioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
-        int percentageVol = ((currIndex * ABS_VOL_BASE) / maxVolume);
+        int percentageVol = (maxVolume != 0) ? ((currIndex * ABS_VOL_BASE) / maxVolume) : 0;
         logD("maxVolume: " + maxVolume + " currIndex: " + currIndex +
                                          " percentageVol: " + percentageVol);
         return percentageVol;
